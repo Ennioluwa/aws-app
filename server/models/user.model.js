@@ -5,17 +5,15 @@ const userSchema = new mongoose.Schema(
   {
     username: {
       type: String,
-      required: ["Name is required"],
+      required: true,
       trim: true,
-      max: 12,
       index: true,
       lowercase: true,
-      max: 12,
     },
     name: {
       type: String,
       trim: true,
-      required: true,
+      required: ["Name is required"],
       max: 32,
     },
     email: {
@@ -58,7 +56,11 @@ userSchema.methods = {
   encryptPassword: function (password) {
     if (!password) return "";
     try {
-      crypto.createHmac("sha256", this.salt).update(password).digest("hex");
+      console.log("encypt password method");
+      return crypto
+        .createHmac("sha1", this.salt)
+        .update(password)
+        .digest("hex");
     } catch (error) {
       return "";
     }

@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useContext, useEffect, useState } from 'react'
 import axios from 'axios'
 import { useRouter } from 'next/router'
+import useUser, { UserContext } from '../context'
 
 const register = () => {
   const [values, setValues] = useState({
@@ -12,8 +13,13 @@ const register = () => {
     text: '',
   })
   const { name, email, password, error, buttonText, text } = values
-  console.log(process.env.NEXT_PUBLIC_APP_NAME)
+  const { state, dispatch } = useUser()
+  const { user } = state
   const router = useRouter()
+  console.log()
+  useEffect(() => {
+    if (user !== null) router.push('/')
+  }, [user])
 
   const handleChange = (name) => (e) => {
     setValues({

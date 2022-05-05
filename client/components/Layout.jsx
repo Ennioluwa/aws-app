@@ -1,40 +1,82 @@
+import axios from 'axios'
 import Head from 'next/head'
 import Link from 'next/link'
+import Router, { useRouter } from 'next/router'
+import { useContext, useEffect } from 'react'
+import useUser from '../context'
+import { isAuth, removeLocalStorage } from '../helpers'
 
 const Layout = ({ children }) => {
   //navbar component
+
+  const { state, dispatch } = useUser()
+  const { user } = state
+  const router = useRouter()
+
+  const handleSignout = async () => {
+    await axios
+      .get(`${process.env.NEXT_PUBLIC_APP_NAME}/api/logout`)
+      .then(({ data }) => {
+        dispatch({ type: 'LOGOUT', payload: data.message })
+        removeLocalStorage('user')
+        console.log(data.message)
+        Router.push('/login')
+      })
+      .catch((err) => {
+        console.log(err)
+      })
+  }
   const nav = () => (
     <nav className=" relative bg-blue-500 text-sm font-semibold text-white shadow-lg">
-      <ul className=" container mx-auto flex h-16 items-center gap-2">
-        <li>
-          <Link href="/">
-            <a className=" rounded-md px-5 py-2 hover:bg-gray-100 hover:text-black">
-              Home
-            </a>
-          </Link>
-        </li>
-        <li>
-          <Link href="/">
-            <a className=" rounded-md px-5 py-2 hover:bg-gray-100 hover:text-black">
-              Submit a link
-            </a>
-          </Link>
-        </li>
-        <li className=" ml-auto">
+      <div className=" container mx-auto flex h-16 items-center gap-2">
+        <Link href="/">
+          <a className=" rounded-md px-5 py-2 hover:bg-gray-100 hover:text-black">
+            Home
+          </a>
+        </Link>
+        <Link href="/">
+          <a className=" rounded-md px-5 py-2 hover:bg-gray-100 hover:text-black">
+            Submit a link
+          </a>
+        </Link>
+        {!user && (
           <Link href="/login">
-            <a className="rounded-md px-5 py-2 hover:bg-gray-100 hover:text-black">
+            <a className="ml-auto rounded-md px-5 py-2 hover:bg-gray-100 hover:text-black">
               Login
             </a>
           </Link>
-        </li>
-        <li>
+        )}
+
+        {!user && (
           <Link href="/register">
             <a className=" rounded-md px-5 py-2 hover:bg-gray-100 hover:text-black">
               Register
             </a>
           </Link>
-        </li>
-      </ul>
+        )}
+        {user && user.role === 'admin' && (
+          <Link href="/admin">
+            <a className="ml-auto rounded-md px-5 py-2 hover:bg-gray-100 hover:text-black">
+              {user && user.name}
+            </a>
+          </Link>
+        )}
+        {user && user.role === 'Subscriber' && (
+          <Link href="/user">
+            <a className="ml-auto rounded-md px-5 py-2 hover:bg-gray-100 hover:text-black">
+              {user && user.name}
+            </a>
+          </Link>
+        )}
+        {user && (
+          <button
+            onClick={handleSignout}
+            className=" rounded-md px-5 py-2 hover:bg-gray-100 hover:text-black"
+          >
+            Signout
+          </button>
+        )}
+      </div>
     </nav>
   )
   // head component

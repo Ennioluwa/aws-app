@@ -1,14 +1,24 @@
-import { useState } from 'react'
+import axios from 'axios'
+import Router, { useRouter } from 'next/router'
+import { useContext, useEffect, useState } from 'react'
+import { authenticate, isAuth } from '../helpers'
+import useUser, { UserContext } from '../context'
 const Login = () => {
   const [values, setValues] = useState({
     email: '',
     password: '',
     error: '',
-    buttonText: 'Register',
+    buttonText: 'Login',
     text: '',
   })
   const { email, password, error, buttonText, text } = values
+  const { state, dispatch } = useUser()
+  const { user } = state
+  const router = useRouter()
 
+  useEffect(() => {
+    if (isAuth()) router.push('/')
+  }, [isAuth()])
   const handleChange = (name) => (e) => {
     setValues({
       ...values,
@@ -17,18 +27,31 @@ const Login = () => {
       error: '',
     })
   }
-  const handleSubmit = (e) => {
+
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    console.log(values)
-    setValues({
-      ...values,
-      name: '',
-      email: '',
-      password: '',
-      error: '',
-      buttonText: 'Logging in',
-      text: '',
-    })
+    await axios
+      .post(`${process.env.NEXT_PUBLIC_APP_NAME}/api/login`, {
+        email,
+        password,
+      })
+      .then(({ data }) => {
+        // window.localStorage.setItem('user', JSON.stringify(data.user))
+        // console.log(data.user)
+        dispatch({ type: 'LOGIN', payload: data.user })
+        authenticate(data.user, () => {
+          isAuth() && isAuth().role === 'admin'
+            ? router.push('/admin')
+            : router.push('/user')
+        })
+      })
+      .catch(({ response }) => {
+        console.log(response)
+        setValues({
+          ...values,
+          error: response.data.error,
+        })
+      })
   }
   return (
     <div className=" mt-[-64px] h-screen bg-gray-200 pt-16">
@@ -38,7 +61,11 @@ const Login = () => {
           onSubmit={handleSubmit}
         >
           <h3 className=" mb-10 text-4xl font-semibold">Login</h3>
-
+          {values.text && (
+            <p className=" rounded bg-green-400 p-3 text-white">
+              {values.text}
+            </p>
+          )}
           <div className="mb-4">
             <label
               className="mb-2 block text-sm font-bold text-gray-700"
@@ -52,6 +79,7 @@ const Login = () => {
               type="email"
               placeholder="Email"
               value={email}
+              required
               onChange={handleChange('email')}
             />
           </div>
@@ -68,6 +96,7 @@ const Login = () => {
               type="password"
               placeholder="Password"
               value={password}
+              required
               onChange={handleChange('password')}
             />
             {error && <p className="text-xs italic text-red-500">{error}</p>}

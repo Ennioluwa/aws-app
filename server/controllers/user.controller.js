@@ -1,16 +1,13 @@
-const userById = (req, res) => {
-  try {
-    res.json({ message: "Hello from the user route" });
-  } catch (err) {
-    console.log(err);
-  }
+import User from "../models/user.model";
+
+const getUsers = async (req, res) => {
+  const users = await User.find({});
+  return res.status(200).json({ users });
 };
-const postById = (req, res) => {
-  try {
-    res.json({ message: "Hello from the post route" });
-  } catch (err) {
-    console.log(err);
-  }
+const read = (req, res) => {
+  req.profile.hashed_password = undefined;
+  req.profile.salt = undefined;
+  return res.json(req.profile);
 };
 
-export default { userById, postById };
+export default { getUsers, read };
