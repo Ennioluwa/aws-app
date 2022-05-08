@@ -12,9 +12,23 @@ router
     authController.register
   );
 router.route("/api/activate").post(authController.activate);
-router.route("/api/login").post(authController.login);
+router
+  .route("/api/login")
+  .post(register.userLoginValidator, run.runValidation, authController.login);
 router.route("/api/logout").get(authController.logout);
-router.route("/api/auth/password").post(authController.reset);
-router.route("/api/password/reset").post(authController.resetPassword);
+router
+  .route("/api/forgot-password")
+  .put(
+    register.forgotPasswordValidator,
+    run.runValidation,
+    authController.forgotPassword
+  );
+router
+  .route("/api/reset-password")
+  .put(
+    register.resetPasswordValidator,
+    run.runValidation,
+    authController.resetPassword
+  );
 
 export default router;

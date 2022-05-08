@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import { getParams, getResetParams } from "../helpers/email";
 import { nanoid } from "nanoid";
 import { expressjwt } from "express-jwt";
+import lodash from "lodash";
 
 AWS.config.update({
   accessKeyId: process.env.API_ACCESS_KEY_ID,
@@ -141,14 +142,18 @@ const isAdmin = async (req, res, next) => {
   });
 };
 
-const reset = async (req, res) => {
+const forgotPassword = async (req, res) => {
   const user = await User.findOne({ email: req.body.email });
   if (!user) {
     return res.status(400).json({ error: "Unable to get user" });
   }
-  const token = jwt.sign({ _id: user._id }, process.env.JWT_SECRET, {
-    expiresIn: "1h",
-  });
+  const token = jwt.sign(
+    { _id: user._id, name: user.name },
+    process.env.JWT_SECRET,
+    {
+      expiresIn: "10m",
+    }
+  );
   const params = getResetParams(user.email, token);
   const sendEmail = ses.sendEmail(params).promise();
   sendEmail
@@ -166,7 +171,7 @@ const reset = async (req, res) => {
 };
 const resetPassword = async (req, res) => {
   const token = req.body.token;
-  const password = req.body.password;
+  const newPassword = req.body.newPassword;
   // console.log(token);
   jwt.verify(token, process.env.JWT_SECRET, async function (err, decoded) {
     if (err) {
@@ -176,24 +181,28 @@ const resetPassword = async (req, res) => {
     }
     if (decoded) {
       const { _id } = jwt.decode(token);
-      // let user = await User.findById(_id);
-      // if (!user) {
-      //   return res.status(401).json({ error: "Email does not exist" });
-      // }
-      console.log(password);
-      User.findByIdAndUpdate(_id, { password }, async function (err, data) {
+      User.findById(_id, async function (err, data) {
         if (err || !data) {
-          return console.log(err);
+          return res.status(401).send({ error: "User not found." });
         }
         console.log(data);
+        if (data.authenticate(newPassword)) {
+          return res
+            .status(400)
+            .json({
+              error:
+                "Password cannot be the same as the previous password. Please use a different password",
+            });
+        }
+        const newUser = lodash.extend(data, { password: newPassword });
         try {
-          // await data.save();
+          await newUser.save();
           return res
             .status(200)
             .json({ message: "Password changed successfully. Please login" });
         } catch (error) {
           console.log(error);
-          return res.status(400).json({ error: "Error changing password" });
+          return res.status(400).json({ error: "Error resetting password" });
         }
       });
     }
@@ -208,6 +217,6 @@ export default {
   requireSignin,
   hasAuthentication,
   isAdmin,
-  reset,
+  forgotPassword,
   resetPassword,
 };

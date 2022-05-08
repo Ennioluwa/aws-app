@@ -49,7 +49,7 @@ export const getResetParams = (email, token) => {
       },
       Subject: {
         Charset: "UTF-8",
-        Data: "Complete your registration",
+        Data: "Reset your password",
       },
     },
   };

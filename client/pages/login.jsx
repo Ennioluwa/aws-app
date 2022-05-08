@@ -1,5 +1,6 @@
 import axios from 'axios'
 import Router, { useRouter } from 'next/router'
+import Link from 'next/link'
 import { useContext, useEffect, useState } from 'react'
 import { authenticate, isAuth } from '../helpers'
 import useUser, { UserContext } from '../context'
@@ -108,6 +109,11 @@ const Login = () => {
             >
               {buttonText}
             </button>
+            <Link href={`/user/reset`}>
+              <a className=" font-semibold text-blue-400 underline">
+                Forgot Password?
+              </a>
+            </Link>
           </div>
           {/* <p>{JSON.stringify(values)}</p> */}
         </form>
