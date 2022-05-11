@@ -18,7 +18,7 @@ router.post(
 router.get("/categories", categoryController.list);
 router
   .route("/category/:slug")
-  .get(categoryController.read)
+  .post(categoryController.read)
   .put(
     validator.categoryUpdateValidator,
     run.runValidation,

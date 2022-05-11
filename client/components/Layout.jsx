@@ -27,14 +27,14 @@ const Layout = ({ children }) => {
       })
   }
   const nav = () => (
-    <nav className=" relative bg-blue-500 text-sm font-semibold text-white shadow-lg">
+    <nav className=" relative overflow-hidden bg-blue-500 text-sm font-semibold text-white shadow-lg">
       <div className=" container mx-auto flex h-16 items-center gap-2">
         <Link href="/">
           <a className=" rounded-md px-5 py-2 hover:bg-gray-100 hover:text-black">
             Home
           </a>
         </Link>
-        <Link href="/">
+        <Link href="/user/link/create">
           <a className=" rounded-md px-5 py-2 hover:bg-gray-100 hover:text-black">
             Submit a link
           </a>

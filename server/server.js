@@ -1,12 +1,12 @@
 import express from "express";
 const morgan = require("morgan");
 import cors from "cors";
-import bodyParser from "body-parser";
 import mongoose from "mongoose";
 import "dotenv/config";
 import userRoute from "./routes/user.route";
 import authRoute from "./routes/auth.route";
 import categoryRoute from "./routes/category.route";
+import linkRoute from "./routes/link.route";
 import cookieParser from "cookie-parser";
 import csrf from "csurf";
 
@@ -29,10 +29,10 @@ app.use(cookieParser());
 app.use(cors({ origin: process.env.CLIENT_URL, credentials: true }));
 app.use(morgan("dev"));
 app.use(express.json({ limit: "50mb" }));
-app.use(express.urlencoded({ limit: "50mb" }));
 app.use("/", authRoute);
 app.use("/", userRoute);
 app.use("/api", categoryRoute);
+app.use("/api", linkRoute);
 app.use(csrfProtection);
 
 app.get("/api/csrf-token", (req, res) => {

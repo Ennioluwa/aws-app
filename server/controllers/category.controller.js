@@ -1,5 +1,6 @@
 import slugify from "slugify";
 import categoryModel from "../models/category.model";
+import linkModel from "../models/link.model";
 import formidable from "formidable";
 import { v4 as uuidv4 } from "uuid";
 import AWS from "aws-sdk";
@@ -118,7 +119,36 @@ const list = async (req, res) => {
   return res.json({ message: "All posts", data });
 };
 const read = async (req, res) => {
-  res.json({ message: "created" });
+  const { slug } = req.params;
+  let limit = req.body.limit ? parseInt(req.body.limit) : 3;
+  let skip = req.body.skip ? parseInt(req.body.skip) : 0;
+
+  console.log(slug);
+  categoryModel
+    .findOne({ slug })
+    .populate("postedBy", "_id name username")
+    .exec((err, category) => {
+      if (err || !category) {
+        return res.status(400).json({ error: "Unable to get category" });
+      }
+      // return res.json({ data: category });
+      linkModel
+        .find({ categories: category })
+        .populate("postedBy", "_id name username")
+        .populate("categories", "name")
+        .sort({ createdAt: -1 })
+        .limit(limit)
+        .skip(skip)
+        .exec((err, links) => {
+          if (err || !links) {
+            return res
+              .status(400)
+              .json({ error: "Unable to get links from category" });
+          }
+
+          return res.json({ message: "Links", links, category });
+        });
+    });
 };
 const update = async (req, res) => {
   res.json({ message: "created" });

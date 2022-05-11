@@ -11,13 +11,12 @@ const ReactQuill = dynamic(() => import('react-quill'), { ssr: false })
 const create = () => {
   const [values, setValues] = useState({
     name: '',
-    content: '',
+    content: {},
     error: '',
     buttonText: 'Create',
     text: '',
     photo: '',
-    success: 'Hello',
-    // formData: typeof window !== 'undefined' && new FormData(),
+    success: '',
   })
   const { name, content, error, buttonText, text, photo, success } = values
   const { state, dispatch } = useUser()
@@ -71,6 +70,34 @@ const create = () => {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setValues({ ...values, buttonText: 'Creating' })
+    try {
+      const { data } = await axios.post(
+        `${process.env.NEXT_PUBLIC_APP_NAME}/api/category`,
+        {
+          name,
+          image: photo,
+          content,
+        }
+      )
+      setValues({
+        ...values,
+        success: data.message,
+        buttonText: 'Created',
+        error: '',
+        name: '',
+        photo: '',
+      })
+      console.log(content)
+      return
+    } catch ({ response }) {
+      setValues({
+        ...values,
+        buttonText: 'Create',
+        error: response.data.error,
+      })
+      return console.log(error)
+    }
+
     await axios
       .post(`${process.env.NEXT_PUBLIC_APP_NAME}/api/category`, {
         name,
@@ -78,6 +105,7 @@ const create = () => {
         content,
       })
       .then(({ data }) => {
+        console.log(data.message)
         setValues({
           ...values,
           name: '',
@@ -86,6 +114,7 @@ const create = () => {
           buttonText: 'Created',
           success: data.message,
         })
+        console.log(data)
       })
       .catch(({ response }) => {
         console.log(response)
@@ -95,12 +124,12 @@ const create = () => {
           error: response.data.error,
         })
       })
+    console.log(success)
   }
-  console.log(text)
 
   return (
     <div className=" mt-[-64px] h-screen bg-gray-200 pt-16">
-      <div className="mx-auto grid h-full w-full max-w-sm place-items-center">
+      <div className="mx-auto grid h-full w-full max-w-sm place-items-center p-5">
         <form
           className="mb-4 flex w-full grow flex-col gap-3 rounded bg-white px-8 pt-6 pb-8 shadow-md"
           onSubmit={handleSubmit}

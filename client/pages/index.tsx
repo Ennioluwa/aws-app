@@ -18,7 +18,7 @@ const Home = ({ categories }) => {
       <h1 className=" text-3xl font-semibold">Categories</h1>
       <div className="grid grid-cols-2   border border-black md:grid-cols-3">
         {categories.map((category, i) => (
-          <Link href={`/`} key={i}>
+          <Link href={`/links/${category.slug}`} key={i}>
             <a className="col-span-1 w-full border border-black bg-gray-200 p-5 hover:bg-gray-100">
               <div className=" flex flex-col gap-3">
                 <img
