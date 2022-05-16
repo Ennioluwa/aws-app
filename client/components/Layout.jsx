@@ -61,7 +61,7 @@ const Layout = ({ children }) => {
             </a>
           </Link>
         )}
-        {user && user.role === 'Subscriber' && (
+        {user && user.role === 'subscriber' && (
           <Link href="/user">
             <a className="ml-auto rounded-md px-5 py-2 hover:bg-gray-100 hover:text-black">
               {user && user.name}

@@ -1,18 +1,19 @@
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/router'
 import axios from 'axios'
 import useUser from '../../../context'
 
-const create = () => {
+const update = ({ categor }) => {
   const [values, setValues] = useState({
     url: '',
     title: '',
-    categories: [],
+    categories: categor,
     chosenCategory: [],
     error: '',
     success: '',
     medium: '',
     type: '',
-    buttonText: 'Submit',
+    buttonText: 'Update',
   })
   const {
     url,
@@ -28,16 +29,39 @@ const create = () => {
   const { state } = useUser()
   const { user } = state
 
+  const router = useRouter()
+  let slug = router.query.slug
+
+  // useEffect(async () => {
+  //   await axios
+  //     .get(`${process.env.NEXT_PUBLIC_APP_NAME}/api/categories`)
+  //     .then(({ data }) => {
+  //       setValues({ ...values, categories: data.data })
+  //     })
+  //     .catch(({ response }) => {
+  //       setValues({ ...values, error: response.data.error })
+  //     })
+  // }, [])
   useEffect(async () => {
     await axios
-      .get(`${process.env.NEXT_PUBLIC_APP_NAME}/api/categories`)
+      .get(`${process.env.NEXT_PUBLIC_APP_NAME}/api/link/${slug}`)
       .then(({ data }) => {
-        setValues({ ...values, categories: data.data })
+        console.log(data)
+        const { medium, url, type, title, categories } = data
+        setValues({
+          ...values,
+          medium,
+          url,
+          type,
+          title,
+          chosenCategory: categories,
+        })
       })
       .catch(({ response }) => {
-        setValues({ ...values, error: response.data.error })
+        console.log(response.data.error)
+        // setValues({ ...values, error: response.data.error })
       })
-  }, [])
+  }, [slug])
 
   const handleChange = (name) => (e) => {
     setValues({
@@ -48,10 +72,10 @@ const create = () => {
   }
 
   const handleSubmit = async (e) => {
-    setValues({ ...values, buttonText: 'Submitting' })
+    setValues({ ...values, buttonText: 'Updating' })
     e.preventDefault()
     await axios
-      .post(`${process.env.NEXT_PUBLIC_APP_NAME}/api/link/create`, {
+      .put(`${process.env.NEXT_PUBLIC_APP_NAME}/api/link/${slug}`, {
         title,
         url,
         medium,
@@ -59,16 +83,16 @@ const create = () => {
         categories: chosenCategory,
       })
       .then(({ data }) => {
+        const { title, type, url, medium } = data
         setValues({
           ...values,
           success: data.message,
-          title: '',
-          type: '',
-          url: '',
-          medium: '',
-          chosenCategory: [],
+          title,
+          type,
+          url,
+          medium,
           error: '',
-          buttonText: 'Submitted',
+          buttonText: 'Updated',
         })
       })
       .catch(({ response }) => {
@@ -77,7 +101,7 @@ const create = () => {
         setValues({
           ...values,
           error: response.data.error,
-          buttonText: 'Submit',
+          buttonText: 'Update',
         })
       })
   }
@@ -93,8 +117,7 @@ const create = () => {
     setValues({ ...values, chosenCategory: all })
     console.log(all)
   }
-  console.log(medium)
-  //   console.log(categories)
+  // console.log(medium)
   return (
     <div className=" mt-[-64px] h-screen bg-gray-200 pt-16">
       <div className="container mx-auto grid w-full grid-cols-12 gap-6 p-5">
@@ -102,20 +125,19 @@ const create = () => {
           <div>
             <h2>Category</h2>
             <ul className=" max-h-24 overflow-y-scroll">
-              {categories &&
-                categories.map((category) => (
-                  <li key={category._id}>
-                    <input
-                      type="checkbox"
-                      name="category"
-                      id="category"
-                      checked={chosenCategory.includes(category._id)}
-                      onChange={handleToggle(category._id)}
-                      className=" mr-2"
-                    />
-                    <label>{category.name}</label>
-                  </li>
-                ))}
+              {categories.map((category) => (
+                <li key={category._id}>
+                  <input
+                    type="checkbox"
+                    name="category"
+                    id="category"
+                    checked={chosenCategory.includes(category._id)}
+                    onChange={handleToggle(category._id)}
+                    className=" mr-2"
+                  />
+                  <label>{category.name}</label>
+                </li>
+              ))}
             </ul>
           </div>
 
@@ -231,4 +253,22 @@ const create = () => {
     </div>
   )
 }
-export default create
+export default update
+
+export const getServerSideProps = async () => {
+  const data = await axios.get(
+    `${process.env.NEXT_PUBLIC_APP_NAME}/api/categories`
+  )
+  if (!data) {
+    return {
+      props: {
+        categor: [],
+      },
+    }
+  }
+  return {
+    props: {
+      categor: data.data.data,
+    },
+  }
+}

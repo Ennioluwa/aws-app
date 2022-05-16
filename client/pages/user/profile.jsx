@@ -1,90 +1,100 @@
-import axios from 'axios'
-import Router, { useRouter } from 'next/router'
-import Link from 'next/link'
 import { useContext, useEffect, useState } from 'react'
-import { authenticate, isAuth } from '../helpers'
-import useUser, { UserContext } from '../context'
-const Login = () => {
+import axios from 'axios'
+import { useRouter } from 'next/router'
+import useUser from '../../context'
+import UserAuth from '../../components/auth/UserAuth'
+
+const profile = ({ user }) => {
   const [values, setValues] = useState({
-    email: '',
+    name: user.name,
     password: '',
     error: '',
-    buttonText: 'Login',
+    email: user.email,
+    buttonText: 'Update',
     text: '',
   })
-  const { email, password, error, buttonText, text } = values
-  const { state, dispatch } = useUser()
-  const { user } = state
+  // const [buttonText, setButtonText] = useState('update')
+  const { name, email, password, error, buttonText, text } = values
   const router = useRouter()
-
-  useEffect(() => {
-    if (isAuth()) router.push('/')
-  }, [isAuth()])
+  const { dispatch } = useUser()
   const handleChange = (name) => (e) => {
     setValues({
       ...values,
       [name]: e.target.value,
-      buttonText: 'Login',
+      buttonText: 'Update',
       error: '',
+      text: '',
     })
   }
-
+  console.log(values.text)
   const handleSubmit = async (e) => {
     e.preventDefault()
+    setValues({ ...values, buttonText: 'Updating' })
     await axios
-      .post(`${process.env.NEXT_PUBLIC_APP_NAME}/api/login`, {
+      .put(`${process.env.NEXT_PUBLIC_APP_NAME}/api/user/update`, {
+        name,
         email,
         password,
       })
       .then(({ data }) => {
-        window.localStorage.setItem('user', JSON.stringify(data.user))
-        // console.log(data.user)
-        dispatch({ type: 'LOGIN', payload: data.user })
-        authenticate(data.user, () => {
-          isAuth() && isAuth().role === 'admin'
-            ? router.push('/admin')
-            : router.push('/')
-        })
+        setValues({ ...values, buttonText: 'Updated', text: data.message })
+        dispatch({ type: 'UPDATE', payload: data.data })
       })
       .catch(({ response }) => {
-        console.log(response)
         setValues({
           ...values,
+          buttonText: 'Update',
           error: response.data.error,
         })
       })
   }
+
   return (
     <div className=" mt-[-64px] h-screen bg-gray-200 pt-16">
       <div className="mx-auto grid h-full w-full max-w-sm place-items-center">
         <form
-          className="mb-4 flex w-full grow flex-col rounded bg-white px-8 pt-6 pb-8 shadow-md"
+          className="mb-4 flex w-full grow flex-col gap-3 rounded bg-white px-8 pt-6 pb-8 shadow-md"
           onSubmit={handleSubmit}
         >
-          <h3 className=" mb-10 text-4xl font-semibold">Login</h3>
-          {values.text && (
-            <p className=" rounded bg-green-400 p-3 text-white">
-              {values.text}
-            </p>
+          <h3 className="mb-3 text-4xl font-semibold">Update</h3>
+          {text && (
+            <p className=" rounded bg-green-400 p-3 text-white">{text}</p>
           )}
           <div className="mb-4">
             <label
               className="mb-2 block text-sm font-bold text-gray-700"
-              htmlFor="email"
+              htmlFor="username"
+            >
+              Name
+            </label>
+            <input
+              className="focus:shadow-outline w-full appearance-none rounded border py-2 px-3 leading-tight text-gray-700 shadow focus:outline-none"
+              id="username"
+              type="text"
+              placeholder="Username"
+              required
+              value={name}
+              onChange={handleChange('name')}
+            />
+          </div>
+          <div className="mb-4">
+            <label
+              className="mb-2 block text-sm font-bold text-gray-700"
+              htmlFor="username"
             >
               Email
             </label>
             <input
               className="focus:shadow-outline w-full appearance-none rounded border py-2 px-3 leading-tight text-gray-700 shadow focus:outline-none"
               id="email"
-              type="email"
-              placeholder="Email"
-              value={email}
+              type="text"
               required
-              onChange={handleChange('email')}
+              value={email}
+              disabled
             />
           </div>
-          <div className="mb-6">
+
+          <div className="mb-2">
             <label
               className="mb-2 block text-sm font-bold text-gray-700"
               htmlFor="password"
@@ -97,10 +107,11 @@ const Login = () => {
               type="password"
               placeholder="Password"
               value={password}
-              required
               onChange={handleChange('password')}
             />
-            {error && <p className="text-xs italic text-red-500">{error}</p>}
+            {error && (
+              <p className="mt-3 text-xs italic text-red-500">{error}</p>
+            )}
           </div>
           <div className="flex items-center justify-between">
             <button
@@ -109,17 +120,13 @@ const Login = () => {
             >
               {buttonText}
             </button>
-            <Link href={`/user/reset`}>
-              <a className=" font-semibold text-blue-400 underline">
-                Forgot Password?
-              </a>
-            </Link>
           </div>
-          {/* <p>{JSON.stringify(values)}</p> */}
         </form>
       </div>
     </div>
   )
 }
 
-export default Login
+export default profile
+
+export const getServerSideProps = UserAuth()

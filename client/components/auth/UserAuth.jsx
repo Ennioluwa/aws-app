@@ -20,9 +20,20 @@ export default function UserAuth(gssp) {
           },
         }
       }
+      if (gssp) {
+        const gsspData = await gssp(context)
+        return {
+          props: {
+            ...gsspData.props,
+            user: data.user || null,
+            links: data.links || null,
+          },
+        }
+      }
       return {
         props: {
-          data,
+          user: data.user || null,
+          links: data.links || null,
         },
       }
     } catch (error) {

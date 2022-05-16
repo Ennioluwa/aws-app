@@ -47,7 +47,6 @@ export default function AdminAuth(gssp) {
           },
         }
       )
-      console.log(data)
       if (!data) {
         return {
           redirect: {
@@ -56,10 +55,21 @@ export default function AdminAuth(gssp) {
           },
         }
       }
+      if (gssp) {
+        const gsspData = await gssp(context)
+        return {
+          props: {
+            ...gsspData.props,
+            user: data.user || null,
+            links: data.links || null,
+          },
+        }
+      }
 
       return {
         props: {
-          data: data.data || null,
+          user: data.user || null,
+          links: data.links || null,
         },
       }
     } catch (error) {

@@ -5,6 +5,7 @@ import { getParams, getResetParams } from "../helpers/email";
 import { nanoid } from "nanoid";
 import { expressjwt } from "express-jwt";
 import lodash from "lodash";
+import linkModel from "../models/link.model";
 
 AWS.config.update({
   accessKeyId: process.env.API_ACCESS_KEY_ID,
@@ -118,11 +119,25 @@ const requireSignin = expressjwt({
 });
 const hasAuthentication = async (req, res, next) => {
   const authId = req.auth._id;
+  console.log(authId, "id");
   User.findById(authId).exec((err, user) => {
     if (!user || err) {
       return res.status(400).json({ error: "User not found" });
     }
     req.profile = user;
+    next();
+  });
+};
+const isAuthorized = async (req, res, next) => {
+  const _id = req.params.slug;
+  linkModel.findById(_id).exec((err, user) => {
+    if (!user || err) {
+      return res.status(400).json({ error: "User not found" });
+    }
+    let authorizedUser = user.postedBy._id === req.auth._id;
+    if (!authorizedUser) {
+      return res.status(400).json({ error: "You are not authorized" });
+    }
     next();
   });
 };
@@ -187,12 +202,10 @@ const resetPassword = async (req, res) => {
         }
         console.log(data);
         if (data.authenticate(newPassword)) {
-          return res
-            .status(400)
-            .json({
-              error:
-                "Password cannot be the same as the previous password. Please use a different password",
-            });
+          return res.status(400).json({
+            error:
+              "Password cannot be the same as the previous password. Please use a different password",
+          });
         }
         const newUser = lodash.extend(data, { password: newPassword });
         try {
@@ -216,6 +229,7 @@ export default {
   logout,
   requireSignin,
   hasAuthentication,
+  isAuthorized,
   isAdmin,
   forgotPassword,
   resetPassword,

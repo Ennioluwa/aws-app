@@ -16,10 +16,10 @@ const Admin = () => {
       <Link href={`/admin/category/manage`}>
         <a className=" text-orange-400">Manage Categories</a>
       </Link>
-      <Link href={`/admin/links/manage`}>
+      <Link href={`/admin/links/`}>
         <a className=" text-orange-400">Manage Links</a>
       </Link>
-      <Link href={`/admin/profile/update`}>
+      <Link href={`/user/profile`}>
         <a className=" text-green-400">Update Profile</a>
       </Link>
     </div>

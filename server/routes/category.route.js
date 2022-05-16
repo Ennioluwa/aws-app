@@ -6,7 +6,7 @@ import authController from "../controllers/auth.controller";
 import categoryController from "../controllers/category.controller";
 
 const router = express.Router();
-
+router.get("/category/popular/:slug", categoryController.popular);
 router.post(
   "/category",
   validator.categoryCreateValidator,

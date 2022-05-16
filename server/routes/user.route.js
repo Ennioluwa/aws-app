@@ -18,5 +18,11 @@ router
     authController.isAdmin,
     userController.read
   );
-
+router
+  .route("/api/user/update")
+  .put(
+    authController.requireSignin,
+    authController.hasAuthentication,
+    userController.update
+  );
 export default router;

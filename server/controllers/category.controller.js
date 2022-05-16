@@ -150,11 +150,113 @@ const read = async (req, res) => {
         });
     });
 };
+
 const update = async (req, res) => {
-  res.json({ message: "created" });
-};
-const remove = async (req, res) => {
-  res.json({ message: "created" });
+  const { slug } = req.params;
+  const { content, name, image } = req.body;
+  console.log(slug);
+  categoryModel.findOneAndUpdate(
+    { slug },
+    { content, name },
+    { new: true },
+    (err, updated) => {
+      if (err || !updated) {
+        return res.status(400).json({ error: "Unable to update category" });
+      }
+      if (!image)
+        return res.json({ message: "Category updated", success: updated });
+      if (image) {
+        const base64Data = new Buffer.from(
+          image.replace(/^data:image\/\w+;base64,/, ""),
+          "base64"
+        );
+        const type = image.split(";")[0].split("/")[1];
+        const updateParams = {
+          Bucket: "enioluwa",
+          Key: updated.image.key,
+        };
+        s3.deleteObject(updateParams, function (err, data) {
+          if (err || !data) {
+            return console.log(err);
+          }
+          const params = {
+            Bucket: "enioluwa",
+            Key: `category/${uuidv4()}.${type}`,
+            Body: base64Data,
+            ACL: "public-read",
+            ContentEncoding: "base64",
+            ContentType: `image/${type}`,
+          };
+
+          s3.upload(params, (err, data) => {
+            if (err) {
+              console.log(err);
+              res.status(400).json({ error: "Upload to s3 failed" });
+            }
+            console.log("AWS UPLOAD RES DATA", data);
+            updated.image.url = data.Location;
+            updated.image.key = data.Key;
+
+            // save to db
+            updated.save((err, success) => {
+              if (err) {
+                console.log(err);
+                res.status(400).json({ error: "Duplicate category" });
+              }
+              return res.json({ message: "Category updated", success });
+            });
+          });
+        });
+      } else {
+        res.json({ message: "Category updated successfully", updated });
+      }
+    }
+  );
 };
 
-export default { create, list, read, update, remove };
+const remove = async (req, res) => {
+  const { slug } = req.params;
+  console.log(slug);
+  categoryModel.findByIdAndDelete(slug, (err, data) => {
+    if (err || !data) {
+      console.log(err);
+      return res.status(400).json({ error: "Unable to get category" });
+    }
+    const updateParams = {
+      Bucket: "enioluwa",
+      Key: data.image.key,
+    };
+    s3.deleteObject(updateParams, function (err, response) {
+      if (err || !response) {
+        return console.log(err);
+      }
+      console.log(data, response);
+      return res.json({ message: "Deleted", data });
+    });
+  });
+};
+const popular = async (req, res) => {
+  let limit = req.body.limit ? parseInt(req.body.limit) : 3;
+  let skip = req.body.skip ? parseInt(req.body.skip) : 0;
+  const slug = req.params.slug;
+  categoryModel.findOne({ slug }).exec((err, category) => {
+    if (err || !category) {
+      return res.status(400).json({ error: "Unable to get category" });
+    }
+    linkModel
+      .find({ categories: category })
+      .populate("postedBy", "name")
+      .populate("categories", "name")
+      .sort({ clicks: -1 })
+      .limit(limit)
+      .skip(skip)
+      .exec((err, links) => {
+        if (err || !links) {
+          return res.status(400).json({ error: "Unable to get links" });
+        }
+        return res.json(links);
+      });
+  });
+};
+
+export default { create, list, read, update, remove, popular };

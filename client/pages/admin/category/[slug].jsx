@@ -2,27 +2,34 @@ import { useEffect, useState } from 'react'
 import axios from 'axios'
 import Resizer from 'react-image-file-resizer'
 import dynamic from 'next/dynamic'
-// import ReactQuill from 'react-quill'
 import 'react-quill/dist/quill.snow.css'
 import { useRouter } from 'next/router'
 import useUser from '../../../context'
 import AdminAuth from '../../../components/auth/adminAuth'
 const ReactQuill = dynamic(() => import('react-quill'), { ssr: false })
-const create = () => {
+const create = ({ oldCategories }) => {
   const [values, setValues] = useState({
-    name: '',
+    name: oldCategories.name,
     error: '',
-    buttonText: 'Create',
+    buttonText: 'Update',
+    imageName: '',
+    previewImage: oldCategories.image.url,
     text: '',
     photo: '',
     success: '',
   })
-  const [content, setContent] = useState('')
-  const { name, error, buttonText, text, photo, success } = values
-  const { state, dispatch } = useUser()
-  const { user } = state
+  const [content, setContent] = useState(oldCategories.content)
+  const {
+    name,
+    error,
+    buttonText,
+    text,
+    photo,
+    success,
+    imageName,
+    previewImage,
+  } = values
   const router = useRouter()
-
   const resizeFile = (file) =>
     new Promise((resolve) => {
       Resizer.imageFileResizer(
@@ -42,7 +49,11 @@ const create = () => {
     try {
       const file = event.target.files[0]
       const image = await resizeFile(file)
-      setValues({ ...values, photo: image })
+      setValues({
+        ...values,
+        photo: image,
+        imageName: event.target.files[0].name,
+      })
     } catch (err) {
       console.log(err)
     }
@@ -54,7 +65,7 @@ const create = () => {
     setValues({
       ...values,
       [name]: e.target.value,
-      buttonText: 'Create',
+      buttonText: 'Update',
       error: '',
     })
   }
@@ -62,69 +73,43 @@ const create = () => {
     setContent(e)
     setValues({
       ...values,
-      buttonText: 'Create',
+      buttonText: 'Update',
       error: '',
     })
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setValues({ ...values, buttonText: 'Creating' })
+    setValues({ ...values, buttonText: 'Updating' })
     try {
-      const { data } = await axios.post(
-        `${process.env.NEXT_PUBLIC_APP_NAME}/api/category`,
+      const { data } = await axios.put(
+        `${process.env.NEXT_PUBLIC_APP_NAME}/api/category/${router.query.slug}`,
         {
           name,
           image: photo,
           content,
         }
       )
+      console.log(data.success)
       setValues({
         ...values,
         success: data.message,
-        buttonText: 'Created',
+        buttonText: 'Updated',
         error: '',
-        name: '',
+        name: data.success.name,
         photo: '',
+        imageName: '',
+        previewImage: data.success.image.url,
       })
-      setContent('')
+      setContent(data.success.content)
       return
     } catch ({ response }) {
       setValues({
         ...values,
-        buttonText: 'Create',
+        buttonText: 'Update',
         error: response.data.error,
       })
-      return console.log(error)
     }
-
-    await axios
-      .post(`${process.env.NEXT_PUBLIC_APP_NAME}/api/category`, {
-        name,
-        image: photo,
-        content,
-      })
-      .then(({ data }) => {
-        console.log(data.message)
-        setValues({
-          ...values,
-          name: '',
-          content: '',
-          error: '',
-          buttonText: 'Created',
-          success: data.message,
-        })
-        console.log(data)
-      })
-      .catch(({ response }) => {
-        console.log(response)
-        setValues({
-          ...values,
-          buttonText: 'Create',
-          error: response.data.error,
-        })
-      })
-    console.log(success)
   }
 
   return (
@@ -134,7 +119,7 @@ const create = () => {
           className="mb-4 flex w-full grow flex-col gap-3 rounded bg-white px-8 pt-6 pb-8 shadow-md"
           onSubmit={handleSubmit}
         >
-          <h3 className="mb-3 text-4xl font-semibold">Create Category</h3>
+          <h3 className="mb-3 text-4xl font-semibold">Update Category</h3>
           {success && (
             <p className=" rounded bg-green-400 p-3 text-white">{success}</p>
           )}
@@ -173,22 +158,28 @@ const create = () => {
               onChange={handleContent}
             />
           </div>
-          <div className="mb-4">
+          <div className="flex flex-wrap items-center gap-2">
             <label
-              className="mb-2 block text-sm font-bold text-gray-700"
+              className="mb-2 cursor-pointer overflow-hidden rounded border border-solid border-gray-300 bg-white bg-clip-padding px-3 py-2 text-base font-normal   text-gray-700 transition ease-in-out focus:border-blue-600 focus:bg-white focus:text-gray-700 focus:outline-none"
               htmlFor="image"
             >
-              Image
+              Upload Image
+              <input
+                className="cursor-pointer rounded border border-solid border-gray-300 bg-white bg-clip-padding text-base font-normal text-gray-700 transition  ease-in-out focus:border-blue-600 focus:bg-white focus:text-gray-700 focus:outline-none"
+                type="file"
+                id="image"
+                accept="image/*"
+                hidden
+                onChange={handleImage}
+              />
             </label>
-            <input
-              className="form-control m-0 block w-full cursor-pointer rounded border border-solid border-gray-300 bg-white bg-clip-padding text-base font-normal text-gray-700 transition  ease-in-out focus:border-blue-600 focus:bg-white focus:text-gray-700 focus:outline-none"
-              type="file"
-              id="image"
-              accept="image/*"
-              required
-              onChange={handleImage}
+            <img
+              src={previewImage}
+              alt="former image"
+              className=" h-14 rounded"
             />
           </div>
+          <p className=" mt-2">{imageName}</p>
 
           {error && <p className="mb-2 text-xs italic text-red-500">{error}</p>}
           <div className="flex items-center justify-between">
@@ -207,4 +198,21 @@ const create = () => {
 
 export default create
 
-export const getServerSideProps = AdminAuth()
+export const getServerSideProps = AdminAuth(async (ctx) => {
+  try {
+    const { data } = await axios.post(
+      `${process.env.NEXT_PUBLIC_APP_NAME}/api/category/${ctx.params.slug}`
+    )
+    return {
+      props: {
+        oldCategories: data.category,
+      },
+    }
+  } catch (error) {
+    return {
+      props: {
+        oldCategories: {},
+      },
+    }
+  }
+})
